@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="halo.l">
+  <link rel="shortcut icon" href="../../../img/favicon.ico">
+  <title>1、CPU核心数，线程数，时间片轮转机制解读 - MyBest</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "1\u3001CPU\u6838\u5fc3\u6570\uff0c\u7ebf\u7a0b\u6570\uff0c\u65f6\u95f4\u7247\u8f6e\u8f6c\u673a\u5236\u89e3\u8bfb";
+    var mkdocs_page_input_path = "\u5e76\u53d1\u7f16\u7a0b\\source\\1\u3001CPU\u6838\u5fc3\u6570\uff0c\u7ebf\u7a0b\u6570\uff0c\u65f6\u95f4\u7247\u8f6e\u8f6c\u673a\u5236\u89e3\u8bfb.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+  <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-36723568-3', 'mkdocs.org');
+      ga('send', 'pageview');
+  </script>
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../../.." class="icon icon-home"> MyBest</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../../主页/">主页</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../">并发编程</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../../关于/">关于</a>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../..">MyBest</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>1、CPU核心数，线程数，时间片轮转机制解读</li>
+    <li class="wy-breadcrumbs-aside">
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h5 id="1cpu">1、CPU核心数和线程数的关系</h5>
+<blockquote>
+<p>核心数:线程数=1:1  ;使用了超线程技术后---&gt; 1:2</p>
+</blockquote>
+<h5 id="2cpu">2、CPU时间片轮转机制</h5>
+<blockquote>
+<p>又称RR调度，会导致上下文切换</p>
+</blockquote>
+<h5 id="3">3、什么是进程和线程</h5>
+<blockquote>
+<p>进程：程序运行资源分配的最小单位，进程内部有多个线程，会共享这个进程的资源
+线程：CPU调度的最小单位，必须依赖进程而存在。</p>
+</blockquote>
+<h5 id="4">4、澄清并行和并发</h5>
+<blockquote>
+<p>并行：同一时刻，可以同时处理事情的能力
+并发：与单位时间相关，在单位时间内可以处理事情的能力</p>
+</blockquote>
+<h5 id="5">5、高并发编程的意义、好处和注意事项</h5>
+<blockquote>
+<p>好处：充分利用cpu的资源、加快用户响应的时间，程序模块化，异步化
+- 问题：
+  线程共享资源，存在冲突；
+  容易导致死锁；
+  启用太多的线程，就有搞垮机器的可能</p>
+</blockquote>
+<h5 id="6java">6、java里的程序天生就是多线程的， 如下获取虚拟机中的线程</h5>
+<pre><code class="java">public class TestMain {
+    public static void main(String[] args) {
+        //获取本地虚拟机中的线程
+        ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+        ThreadInfo[] infos = threadBean.dumpAllThreads(false, false);
+        for(ThreadInfo threadInfo: infos) {
+            System.out.println(threadInfo.getThreadId() + &quot; &quot;+threadInfo.getThreadName());
+        }
+    }
+}
+</code></pre>
+
+<p><img alt="" src="https://www.showdoc.cc/server/api/common/visitfile/sign/8919bfdc574e2ee585022e5ebe387776?showdoc=.jpg" /></p>
+<ul>
+<li>main:  用户程序入口的主线程</li>
+<li>Reference Handler: 负责清除引用的线程</li>
+<li>Finalizer: 调用finalizer的线程</li>
+<li>Sinal Dispatcher: 负责发送虚拟机信号的</li>
+<li>Attach Listener:  获取当前程序运行的所有信息, 包括内存信息等等</li>
+</ul>
+<h5 id="7">7、新启线程的方式</h5>
+<pre><code class="java">public class MyThread {
+
+    //继承Thread类
+
+    //实现Runnable接口
+    private static class UserRun implements Runnable {
+        @Override
+        public void run() {
+            System.out.println(&quot;I am implements Runnable&quot;);
+        }
+
+    }
+
+    //实现Callable接口，允许有返回值
+    private static class UseCall implements Callable&lt;String&gt;{
+        @Override
+        public String call() throws Exception {
+            System.out.println(&quot;I am implements Callable&quot;);
+            return &quot;CallResult&quot;;
+        }
+    }   
+
+    public static void main(String[] args) throws InterruptedException, ExecutionException {
+
+        new Thread(new UserRun()).start();
+
+        FutureTask&lt;String&gt; futureTask = new FutureTask&lt;&gt;(new UseCall());
+        new Thread(futureTask).start();
+
+        System.out.println(futureTask.get());
+    }
+}
+</code></pre>
+
+<pre><code>怎么样才能让Java里的线程安全停止工作呢
+</code></pre>
+<ul>
+<li>线程自然终止：自然执行完或抛出未处理异常</li>
+<li>resume()、suspend()、stop()，这三个方法分别是重启线程、挂起线程、终止线程。stop()会导致线程不会正确释放资源，suspend()容易导致死锁。</li>
+<li>使用interrupt方法中断线程。<blockquote>
+<p>java线程是协作式，而非抢占式。调用一个线程的interrupt() 方法中断一个线程，并不是强行关闭这个线程，只是跟这个线程打个招呼，将线程的中断标志位置为true，线程是否中断，由线程本身决定。</p>
+</blockquote>
+</li>
+</ul>
+<pre><code>注意：isInterrupted() 判定当前线程是否处于中断状态。
+    static方法interrupted() 判定当前线程是否处于中断状态，同时中断标志位改为false。
+    方法里如果抛出InterruptedException，线程的中断标志位会被复位成false，如果确实是需要中断线程，要求我们自己在catch语句块里再次调用interrupt()。
+</code></pre>
+
+<h5 id="7_1">7、线程常用方法和线程的状态</h5>
+<pre><code>线程只有5种状态。整个生命周期就是这几种状态的切换。run()和start() ：run方法就是普通对象的普通方法，只有调用了start()后，Java才会将线程对象和操作系 统中实际的线程进行映射，再来执行run方法。yield() ：让出cpu的执行权，将线程从运行转到可运行状态，但是下个时间片，该线程依然有可能被再次选中运行。
+线程的优先级，取值为1~10，缺省为5，但线程的优先级不可靠，不建议作为线程开发时候的手段
+守护线程，和主线程共死，finally不能保证一定执行
+</code></pre>
+<h5 id="8synchronized">8、synchronized内置锁</h5>
+<pre><code>对象锁，锁的是类的对象实例。类锁 ，锁的是每个类的的Class对象，每个类的的Class对象在一个虚拟机中只有一个，所以类锁也只有一个。
+</code></pre>
+<h5 id="9volatile">9、volatile关键字</h5>
+<pre><code>适合于只有一个线程写，多个线程读的场景，因为它只能确保可见性。
+</code></pre>
+<h5 id="10threadlocal">10、ThreadLocal</h5>
+<pre><code>线程变量。可以理解为是个map，类型 Map&lt;Thread,Integer&gt;
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+      <p>mybest.top</p>
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+      
+    </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+
+</body>
+</html>
